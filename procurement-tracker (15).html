@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard Procurement Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--tx:#14213d;--navy:#14305e;--teal:#175e7d;--sky:#45b0e0;--org:#e8702a;--mut:#e8e8e8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1522;--card:#18233a;--tx:#e6ebf5;--mut:#22304d}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Segoe UI,Arial,sans-serif;padding:12px}
+h1{font-family:Georgia,serif;text-align:center;margin:4px 0 0;font-size:22px}
+.bar{height:6px;background:var(--navy);margin:8px 0 14px}
+#up{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:13px}
+#dash{display:none}
+.kp{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.kg{background:var(--card);flex:1;min-width:280px;border-radius:6px;overflow:hidden}
+.kh,.kv{display:grid;grid-template-columns:repeat(var(--n),1fr);text-align:center;align-items:center}
+.kh{background:var(--navy);color:#fff;font-weight:600;font-size:13px;padding:7px 4px}
+.kv{font-size:24px;font-weight:700;padding:10px 4px;background:var(--mut);color:#14213d}
+.kv .s{font-size:18px}
+.sl{position:relative}
+.sl.open{z-index:30}
+.sh{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;background:var(--card);color:var(--tx);border:1px solid #9aa7b8;font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.sh:hover,.sl.open .sh{border-color:var(--sky)}
+.sl.act .sh{border-color:var(--teal);box-shadow:inset 3px 0 0 var(--teal)}
+.sh .t{font-weight:700}
+.sh .v{flex:1;text-align:right;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh .ar{transition:transform .15s}.sl.open .ar{transform:rotate(180deg)}
+.pop{display:none;position:absolute;left:0;right:0;top:100%;background:var(--card);border:1px solid #9aa7b8;border-top:0;box-shadow:0 8px 18px rgba(0,0,0,.28)}
+.sl.open .pop{display:block}
+.pt{display:flex;gap:6px;padding:6px;border-bottom:1px solid #9aa7b8}
+.pt .q{flex:1;min-width:0;padding:5px 8px;font:inherit;font-size:12px;border:1px solid #9aa7b8;background:var(--bg);color:var(--tx)}
+.all{background:none;border:1px solid #9aa7b8;color:var(--tx);cursor:pointer;font-size:12px;padding:0 10px}
+.all:hover{background:var(--mut)}
+.chips{display:flex;flex-direction:column;gap:3px;padding:6px;max-height:240px;overflow:auto}
+.chip{background:var(--mut);color:var(--tx);border:1px solid transparent;border-radius:0;padding:6px 10px;font-size:12px;cursor:pointer;text-align:left;width:100%}
+.chip:hover{border-color:var(--sky)}
+.chip.on{background:var(--teal);color:#fff;border-color:var(--navy)}
+.clr{background:none;border:1px solid #9aa7b8;color:var(--tx);cursor:pointer;font-size:13px;width:26px;height:24px;line-height:1;padding:0}
+.clr:hover{background:var(--mut)}
+.row{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media(min-width:900px){.row{grid-template-columns:1.4fr 1fr}}
+.pn{background:var(--card);border:3px solid var(--navy);border-radius:22px;overflow:hidden;box-shadow:0 0 10px rgba(69,176,224,.45)}
+.pn h3{margin:0;background:var(--navy);color:#fff;text-align:center;font:600 13px Georgia,serif;padding:8px;letter-spacing:.5px}
+.pn .c{height:340px;padding:8px;position:relative}
+#src{font-size:12px;margin:8px 0;opacity:.85;line-height:1.5}
+#src .w{color:#c0392b;font-weight:600;opacity:1}
+</style></head><body>
+<h1>DASHBOARD Procurement Tracker</h1><div class="bar"></div>
+<div id="up"><input type="file" id="f" accept=".xlsx,.xlsm,.xls"><span id="fn"></span></div>
+<div id="dash">
+<div class="kp">
+<div class="kg"><div class="kh" style="--n:3"><span>Items TOTAL</span><span>Items with RFQ</span><span>% Percentage</span></div><div class="kv" style="--n:3"><b id="k1"></b><b id="k2"></b><b id="k3" class="s"></b></div></div>
+<div class="kg"><div class="kh" style="--n:4"><span>RFQ</span><span>RFQ FORECAST</span><span>RFQ Release to Primoris</span><span>% Percentage</span></div><div class="kv" style="--n:4"><b id="k4"></b><b id="k5"></b><b id="k6"></b><b id="k7" class="s"></b></div></div>
+</div>
+<div id="sls" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px"></div>
+<div id="src"></div>
+<div class="row">
+<div class="pn"><h3>ENGINEERING DISCIPLINE</h3><div class="c"><canvas id="c1"></canvas></div></div>
+<div class="pn"><h3>CATEGORY</h3><div class="c"><canvas id="c2"></canvas></div></div>
+</div></div>
+<script>
+/* Misma lógica que tus tablas dinámicas, calculada desde la hoja Master:
+   Items TOTAL       = ítems únicos (Ref. No.)
+   Items with RFQ    = ítems únicos con algo escrito en "IDOM RFQ Package No." (Recuento de Excel: cuenta también "N/A")
+   RFQ               = RFQ Package No. distintos (solo los que dicen RFQ, sin N/A)
+   RFQ FORECAST      = RFQ distintos con fecha en "RFQ Forecast Issue Date"
+   RFQ Release       = RFQ distintos con fecha en "RFQ Release Date to PRIMORIS"
+   Todo cambia con los segmentadores. */
+const COUNT_NA_AS_RFQ=true;   /* true = igual que tu tabla dinámica; false = no contar N/A como "con RFQ" */
+
+let wb,SN="",OFF=0,HD=[],SL=[],rows=[],MH=null,sel={},ch={},skipped=[];
+const norm=s=>String(s==null?"":s).replace(/\s+/g," ").trim();
+const isNA=v=>/^n\s*\/?\s*a$/i.test(norm(v));
+const isRFQ=v=>/rfq/i.test(norm(v));
+const isDate=v=>{if(typeof v==="number")return v>0;const s=norm(v);return /\d/.test(s)&&!isNA(s)};   /* fecha real o texto con fecha; excluye N/A, TBC, EXP */
+const $=id=>document.getElementById(id);
+const col=i=>XLSX.utils.encode_col(OFF+i);
+
+/* ---- Lee la hoja Master (encabezados por nombre, no por letra) ---- */
+function readMaster(){
+ const n=wb.SheetNames.find(x=>/^master$/i.test(norm(x)))||wb.SheetNames.find(x=>/master/i.test(x))||wb.SheetNames[0];SN=n;
+ const ws=wb.Sheets[n];OFF=ws["!ref"]?XLSX.utils.decode_range(ws["!ref"]).s.c:0;
+ const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:""});
+ const isCat=c=>/^category$/i.test(norm(c)),isDsc=c=>/^(engineering )?discipline$/i.test(norm(c));
+ let hi=a.findIndex((r,i)=>i<40&&r.some(isCat)&&r.some(isDsc));
+ if(hi<0)hi=a.findIndex((r,i)=>i<40&&(r.some(isCat)||r.some(isDsc)));
+ if(hi<0)return false;
+ const h=a[hi].map(norm);HD=h;const ix=re=>h.findIndex(x=>re.test(x));
+ MH={no:ix(/^(ref\.?\s*)?no\.?$/i),dsc:ix(/^(engineering )?discipline$/i),cat:ix(/^category$/i),area:ix(/^area/i),
+  w:ix(/^idom rfq (package )?no/i),y:ix(/forecast.*issue|issue.*forecast/i),z:ix(/release.*primoris/i)};
+ rows=a.slice(hi+1).filter(r=>MH.no>=0?norm(r[MH.no])!=="":r.some(c=>norm(c)!==""));
+ return true}
+const g=(r,k)=>norm(r[MH[k]])||"(blank)";
+
+$("f").onchange=e=>{const f=e.target.files[0];if(!f)return;$("fn").textContent=f.name;
+ const rd=new FileReader();rd.onload=async x=>{wb=XLSX.read(x.target.result,{type:"array"});
+  if(!readMaster()){alert("No encontré los encabezados Category / Discipline en la hoja Master.");return}
+  await buildSlicers(x.target.result);$("dash").style.display="block";draw()};
+ rd.readAsArrayBuffer(f)};
+
+/* Lee de qué campo es cada segmentador guardado en el Excel (solo el nombre del campo; los botones salen de Master) */
+async function readSlicers(buf){const out=[];
+ try{const z=await JSZip.loadAsync(buf),P=new DOMParser(),rd=async n=>P.parseFromString(await z.file(n).async("string"),"text/xml"),caches={};
+  for(const n of Object.keys(z.files).filter(n=>/^xl\/slicerCaches\/[^/]+\.xml$/.test(n))){
+   const r=(await rd(n)).documentElement,src=r.getAttribute("sourceName")||"";
+   caches[r.getAttribute("name")]={field:(src.match(/\[([^\]]+)\]$/)||[])[1]||src}}
+  for(const n of Object.keys(z.files).filter(n=>/^xl\/slicers\/[^/]+\.xml$/.test(n)))
+   [...(await rd(n)).getElementsByTagName("slicer")].forEach(e=>{const c=caches[e.getAttribute("cache")];
+    if(c)out.push({caption:e.getAttribute("caption")||c.field,field:c.field})})}catch(e){}
+ return out}
+async function buildSlicers(buf){
+ let S=await readSlicers(buf);skipped=[];
+ S.forEach(s=>s.col=HD.findIndex(x=>x.toLowerCase()===norm(s.field).toLowerCase()||x.toLowerCase()===norm(s.caption).toLowerCase()));
+ S.filter(s=>s.col<0).forEach(s=>skipped.push(s.caption));
+ S=S.filter((s,i)=>s.col>=0&&S.findIndex(t=>t.col===s.col)===i);
+ if(MH.cat>=0&&!S.some(s=>s.col===MH.cat))S.unshift({caption:"Category",col:MH.cat});
+ if(MH.area>=0&&!S.some(s=>s.col===MH.area))S.push({caption:"Area",col:MH.area});
+ S.forEach(s=>{const u=[...new Set(rows.map(r=>norm(r[s.col])||"(blank)"))].sort((p,q)=>p==="(blank)"?1:q==="(blank)"?-1:p.localeCompare(q,undefined,{numeric:true}));s.items=u});
+ SL=S;sel={};const box=$("sls");box.innerHTML="";
+ SL.forEach((s,k)=>{s.id="s"+k;sel[s.id]=new Set();
+  const p=document.createElement("div");p.className="sl";
+  p.innerHTML='<button type="button" class="sh"><span class="t"></span><span class="v"></span><span class="ar">▾</span></button>'+
+   '<div class="pop"><div class="pt"><input class="q" type="search" placeholder="Buscar..."><button type="button" class="all">Todos</button><button type="button" class="clr" title="Borrar filtro">✕</button></div><div class="chips"></div></div>';
+  const sh=p.querySelector(".sh"),el=p.querySelector(".chips"),q=p.querySelector(".q");
+  p.querySelector(".t").textContent=s.caption;
+  const upd=()=>{const a=[...sel[s.id]];p.querySelector(".v").textContent=a.length===0?"Todos":a.length===1?a[0]:a.length+" seleccionados";p.classList.toggle("act",a.length>0)};
+  const btns=s.items.map(u=>{const b=document.createElement("button");b.type="button";
+   b.className="chip";b.textContent=u;
+   b.onclick=()=>{sel[s.id].has(u)?sel[s.id].delete(u):sel[s.id].add(u);b.classList.toggle("on");upd();draw()};el.appendChild(b);return b});
+  p.querySelector(".clr").onclick=()=>{sel[s.id].clear();btns.forEach(b=>b.classList.remove("on"));upd();draw()};
+  p.querySelector(".all").onclick=()=>{btns.forEach(b=>{if(b.style.display!=="none"){sel[s.id].add(b.textContent);b.classList.add("on")}});upd();draw()};
+  q.oninput=()=>{const t=q.value.toLowerCase();btns.forEach(b=>b.style.display=b.textContent.toLowerCase().includes(t)?"":"none")};
+  sh.onclick=e=>{e.stopPropagation();const o=!p.classList.contains("open");document.querySelectorAll(".sl.open").forEach(x=>x.classList.remove("open"));if(o){p.classList.add("open");q.focus()}};
+  p.querySelector(".pop").onclick=e=>e.stopPropagation();
+  upd();box.appendChild(p)})}
+document.addEventListener("click",()=>document.querySelectorAll(".sl.open").forEach(x=>x.classList.remove("open")));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".sl.open").forEach(x=>x.classList.remove("open"))});
+
+Chart.defaults.font.family="Segoe UI,Arial,sans-serif";
+const tc=()=>getComputedStyle(document.body).color;
+const isDark=()=>matchMedia("(prefers-color-scheme: dark)").matches&&document.documentElement.getAttribute("data-theme")!=="light";
+const grad=(c,a,b)=>{const A=c.chartArea;if(!A)return a;const g=c.ctx.createLinearGradient(0,A.top,0,A.bottom);g.addColorStop(0,a);g.addColorStop(1,b);return g};
+/* Valores: dentro de la barra (o arriba si es muy baja) y sobre cada punto de la línea */
+const barLab={id:"barLab",afterDatasetsDraw(c){const x=c.ctx;x.save();x.textAlign="center";x.font="700 12px Segoe UI,Arial";
+ c.data.datasets.forEach((d,i)=>{const m=c.getDatasetMeta(i);if(m.hidden)return;m.data.forEach((p,j)=>{const v=d.data[j];if(v==null)return;
+  const b=c.getDatasetMeta(0).data[j],short=b&&Math.abs(b.base-b.y)<=26;
+  if(d.type==="line"){let off=13;if(short&&Math.abs(b.y-p.y)<20)off=28;x.fillStyle=d.borderColor;x.fillText(v,p.x,p.y-off)}
+  else if(short){x.fillStyle=tc();x.fillText(v,p.x,p.y-6)}
+  else{x.fillStyle="#fff";x.fillText(v,p.x,p.y+17)}})});x.restore()}};
+/* Total en el centro del anillo y % solo en porciones grandes */
+const ctr={id:"ctr",afterDraw(c){const m=c.getDatasetMeta(0);if(!m.data.length)return;const t=c.data.datasets[0].data.reduce((a,b)=>a+b,0),p=m.data[0],x=c.ctx;
+ x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle=tc();x.font="700 32px Georgia,serif";x.fillText(t,p.x,p.y-8);
+ x.globalAlpha=.65;x.font="12px Segoe UI,Arial";x.fillText("Total",p.x,p.y+16);x.restore()}};
+const sliceLab={id:"sliceLab",afterDatasetsDraw(c){const d=c.data.datasets[0],t=d.data.reduce((a,b)=>a+b,0),x=c.ctx;
+ x.save();x.textAlign="center";x.textBaseline="middle";x.fillStyle="#fff";x.font="700 12px Segoe UI,Arial";
+ c.getDatasetMeta(0).data.forEach((p,j)=>{if(d.data[j]/t<.06)return;const q=p.tooltipPosition();x.fillText(Math.round(d.data[j]/t*100)+"%",q.x,q.y)});x.restore()}};
+function mk(id,cfg,pl){if(ch[id])ch[id].destroy();ch[id]=new Chart($(id),{...cfg,plugins:pl||[]})}
+const CATCOL={"Engineered Equipment":"#1d9bd1","Bulk Material":"#2a9d8f","Subcontract":"#f59e0b"},EXTRA=["#8d99ae","#a78bfa","#f472b6"];
+const pc=(a,b)=>b?Math.round(a/b*100)+"%":"0%";
+
+/* Un solo cálculo para KPIs y gráficos: primero se aplican los segmentadores, luego se cuenta */
+function calc(){
+ const d=rows.filter(r=>SL.every(s=>!sel[s.id].size||sel[s.id].has(norm(r[s.col])||"(blank)")));
+ const W=r=>r[MH.w],hasW=r=>COUNT_NA_AS_RFQ?norm(W(r))!=="":isRFQ(W(r));
+ const items=f=>MH.no>=0?new Set(d.filter(f).map(r=>norm(r[MH.no]))).size:d.filter(f).length;
+ const dist=f=>new Set(d.filter(r=>isRFQ(W(r))&&f(r)).map(r=>norm(W(r)))).size;
+ const D0={},C0={};
+ d.forEach(r=>{const q=g(r,"dsc"),c=g(r,"cat");(D0[q]=D0[q]||[q,0,0])[1]++;if(hasW(r))D0[q][2]++;if(c!=="(blank)")(C0[c]=C0[c]||[c,0])[1]++});
+ return{n:d.length,K:[items(()=>true),items(hasW),dist(()=>true),dist(r=>isDate(r[MH.y])),dist(r=>isDate(r[MH.z]))],D:Object.values(D0),C:Object.values(C0)}}
+function draw(){
+ const filt=SL.some(s=>sel[s.id].size),R=calc(),K=R.K,D=R.D,C=R.C;
+ const names=[["Ref. No.","no"],["Discipline","dsc"],["Category","cat"],["IDOM RFQ Package No.","w"],["RFQ Forecast Issue Date","y"],["RFQ Release Date to PRIMORIS","z"]];
+ const miss=names.filter(c=>MH[c[1]]<0).map(c=>c[0]);
+ const found=names.filter(c=>MH[c[1]]>=0).map(c=>c[0]+" = col. "+col(MH[c[1]]));
+ let t="Hoja '"+SN+"' · "+R.n+" filas"+(filt?" · filtro activo":"")+" · "+found.join(" · ");
+ if(skipped.length)t+=" · segmentadores del Excel sin columna en Master (omitidos): "+skipped.join(", ");
+ const el=$("src");el.textContent=t;
+ if(miss.length){const w=document.createElement("div");w.className="w";w.textContent="⚠ No encontré estas columnas en Master: "+miss.join(", ")+" · Encabezados leídos: "+HD.filter(Boolean).join(" | ");el.appendChild(w)}
+ [K[0],K[1],pc(K[1],K[0]),K[2],K[3],K[4],pc(K[4],K[3])].forEach((v,i)=>$("k"+(i+1)).textContent=v);
+ const tx=tc(),gc=isDark()?"rgba(255,255,255,.09)":"rgba(20,48,94,.09)",tip={backgroundColor:"#14305e",titleColor:"#fff",bodyColor:"#fff",padding:10,cornerRadius:8,boxPadding:4};D.sort((a,b)=>b[1]-a[1]);
+ mk("c1",{type:"bar",data:{labels:D.map(x=>x[0]),datasets:[
+  {type:"bar",label:"Engineering Discipline",data:D.map(x=>x[1]),order:2,borderRadius:{topLeft:10,topRight:10},borderSkipped:false,maxBarThickness:70,backgroundColor:c=>grad(c.chart,"#45b0e0","#14305e")},
+  {type:"line",label:"RFQ Package No.",data:D.map(x=>x[2]),order:1,borderColor:"#ff8a2b",borderWidth:3.5,tension:.4,pointRadius:6,pointHoverRadius:8,pointBackgroundColor:"#fff",pointBorderColor:"#ff8a2b",pointBorderWidth:3,fill:true,backgroundColor:c=>grad(c.chart,"rgba(255,138,43,.30)","rgba(255,138,43,0)")}]},
+  options:{maintainAspectRatio:false,layout:{padding:{top:14}},interaction:{mode:"index",intersect:false},
+   scales:{x:{border:{display:false},ticks:{color:tx,font:{size:12,weight:"600"}},grid:{display:false}},y:{beginAtZero:true,grace:"12%",border:{display:false},ticks:{display:false},grid:{color:gc}}},
+   plugins:{tooltip:tip,legend:{position:"bottom",labels:{color:tx,usePointStyle:true,pointStyle:"rectRounded",boxWidth:12,padding:16}}}}},[barLab]);
+ let ex=0;const cols=C.map(x=>CATCOL[x[0]]||EXTRA[ex++%EXTRA.length]);
+ mk("c2",{type:"doughnut",data:{labels:C.map(x=>x[0]),datasets:[{data:C.map(x=>x[1]),backgroundColor:cols,borderWidth:0,spacing:3,borderRadius:8,hoverOffset:10}]},
+  options:{maintainAspectRatio:false,cutout:"64%",layout:{padding:8},
+   plugins:{tooltip:{...tip,callbacks:{label:q=>{const t=q.dataset.data.reduce((a,b)=>a+b,0);return " "+q.label+": "+q.parsed+" ("+Math.round(q.parsed/t*100)+"%)"}}},
+    legend:{position:"bottom",labels:{color:tx,usePointStyle:true,pointStyle:"circle",boxWidth:10,padding:14,
+     generateLabels:c=>{const d=c.data.datasets[0],t=d.data.reduce((a,b)=>a+b,0);return c.data.labels.map((l,i)=>({text:l+" · "+d.data[i]+" ("+Math.round(d.data[i]/t*100)+"%)",fillStyle:cols[i],strokeStyle:cols[i],fontColor:tx,hidden:!c.getDataVisibility(i),index:i,pointStyle:"circle"}))}}}}}},[ctr,sliceLab]);
+}
+</script></body></html>
